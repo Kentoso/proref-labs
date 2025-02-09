@@ -36,12 +36,10 @@ type XDFld struct {
 	Attributes []KeyValue
 }
 
-// NewParser creates a new parser instance.
 func NewParser(tokens []Token) *Parser {
 	return &Parser{tokens: tokens, pos: 0}
 }
 
-// curToken returns the current token.
 func (p *Parser) curToken() Token {
 	if p.pos < len(p.tokens) {
 		return p.tokens[p.pos]
@@ -49,19 +47,8 @@ func (p *Parser) curToken() Token {
 	return Token{Type: EOF, Literal: ""}
 }
 
-// nextToken advances to the next token.
 func (p *Parser) nextToken() {
 	p.pos++
-}
-
-// expect consumes a token of the given type or returns an error.
-func (p *Parser) expect(t TokenType) (Token, error) {
-	tok := p.curToken()
-	if tok.Type != t {
-		return tok, fmt.Errorf("expected token type %v, got %v (%q)", t, tok.Type, tok.Literal)
-	}
-	p.nextToken()
-	return tok, nil
 }
 
 func (p *Parser) ParseDBD() ([]*Segm, error) {
@@ -73,6 +60,7 @@ func (p *Parser) ParseDBD() ([]*Segm, error) {
 		skipped := p.parseSkip()
 		for skipped {
 			skipped = p.parseSkip()
+			currentSegm = nil
 		}
 
 		segmAttrs, errSegm := p.parseSegm()
@@ -146,6 +134,7 @@ func (p *Parser) parseSegm() ([]KeyValue, error) {
 		return nil, fmt.Errorf("expected SEGM, got %q", tok.Literal)
 	}
 	p.nextToken()
+
 	attributes, err := p.parseAttributeList()
 	if err != nil {
 		return nil, err
@@ -229,9 +218,11 @@ func (p *Parser) parseAttribute() (KeyValue, error) {
 	key := keyTok.Literal
 	p.nextToken()
 	// Expect an "=".
-	if _, err := p.expect(EQUALS); err != nil {
-		return KeyValue{}, err
+	equalsTok := p.curToken()
+	if equalsTok.Type != EQUALS {
+		return KeyValue{}, fmt.Errorf("expected '=', got %q", equalsTok.Literal)
 	}
+	p.nextToken()
 	// Parse the value.
 	value, err := p.parseValue()
 	if err != nil {

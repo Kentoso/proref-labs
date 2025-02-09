@@ -4,6 +4,7 @@ import (
 	_ "embed"
 	"encoding/json"
 	"fmt"
+	"os"
 )
 
 //go:embed example.dbd
@@ -33,6 +34,18 @@ func main() {
 		fmt.Println("Error marshalling segms:", err)
 		return
 	}
+
+	// to file
+
+	f, err := os.Create("example.json")
+	if err != nil {
+		fmt.Println("Error creating file:", err)
+		return
+	}
+
+	defer f.Close()
+
+	_, err = f.Write(segmsJson)
 
 	fmt.Println(string(segmsJson))
 }
