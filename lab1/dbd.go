@@ -16,6 +16,10 @@ func main() {
 		return
 	}
 
+	for _, token := range tokens {
+		fmt.Println(token)
+	}
+
 	parser := NewParser(tokens)
 
 	segms, err := parser.ParseDBD()

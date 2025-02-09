@@ -70,6 +70,11 @@ func (p *Parser) ParseDBD() ([]*Segm, error) {
 	var currentSegm *Segm
 
 	for {
+		skipped := p.parseSkip()
+		for skipped {
+			skipped = p.parseSkip()
+		}
+
 		segmAttrs, errSegm := p.parseSegm()
 		if errSegm == nil {
 			if currentSegm != nil {
@@ -79,17 +84,24 @@ func (p *Parser) ParseDBD() ([]*Segm, error) {
 			currentSegm.Attributes = segmAttrs
 			continue
 		}
+
 		field, errField := p.parseField()
-		if errField == nil {
+		if errField == nil && currentSegm != nil {
 			currentSegm.Fields = append(currentSegm.Fields, field)
 			continue
 		}
+
 		lchild, errLChild := p.parseLChild()
-		if errLChild == nil {
+		if errLChild == nil && currentSegm != nil {
 			currentSegm.LChilds = append(currentSegm.LChilds, lchild)
 			continue
 		}
-		// Temp
+
+		xdFld, errXDFld := p.parseXDFld()
+		if errXDFld == nil && currentSegm != nil {
+			currentSegm.XDFlds = append(currentSegm.XDFlds, xdFld)
+			continue
+		}
 
 		if currentSegm != nil {
 			segms = append(segms, currentSegm)
@@ -107,16 +119,33 @@ func (p *Parser) ParseDBD() ([]*Segm, error) {
 	return segms, nil
 }
 
-// parseSegm parses a SEGM rule. It expects the first token to be "SEGM"
-// and then parses a comma‐separated list of key=value fields.
+func (p *Parser) parseSkip() bool {
+	skipped := false
+
+	tok := p.curToken()
+	if tok.Type == SKIPLINE {
+		skipped = true
+		for tok.Type != EOL {
+			p.nextToken()
+			tok = p.curToken()
+		}
+		p.nextToken()
+		tok = p.curToken()
+	}
+	if tok.Type == LABEL {
+		skipped = true
+		p.nextToken()
+	}
+
+	return skipped
+}
+
 func (p *Parser) parseSegm() ([]KeyValue, error) {
-	// The first token should be the keyword SEGM.
 	tok := p.curToken()
 	if tok.Type != SEGM {
 		return nil, fmt.Errorf("expected SEGM, got %q", tok.Literal)
 	}
 	p.nextToken()
-	// Parse the attributes list.
 	attributes, err := p.parseAttributeList()
 	if err != nil {
 		return nil, err
@@ -125,7 +154,6 @@ func (p *Parser) parseSegm() ([]KeyValue, error) {
 }
 
 func (p *Parser) parseField() (*Field, error) {
-	// The first token should be the keyword FIELD.
 	tok := p.curToken()
 	if tok.Type != FIELD {
 		return nil, fmt.Errorf("expected FIELD, got %q", tok.Literal)
@@ -172,8 +200,8 @@ func (p *Parser) parseAttributeList() ([]KeyValue, error) {
 	var fields []KeyValue
 	for {
 		tok := p.curToken()
-		// Stop if we have reached the end or encountered an 8-digit number (trailing line number).
-		if tok.Type == EOL || isLineNumber(tok.Literal) {
+
+		if tok.Type == EOL {
 			p.nextToken()
 			break
 		}
@@ -243,17 +271,4 @@ func (p *Parser) parseValue() (string, error) {
 		return tok.Literal, nil
 	}
 	return "", fmt.Errorf("unexpected token for value: %q", tok.Literal)
-}
-
-// isLineNumber returns true if lit is exactly 8 digits (e.g. trailing column number).
-func isLineNumber(lit string) bool {
-	if len(lit) != 8 {
-		return false
-	}
-	for _, r := range lit {
-		if r < '0' || r > '9' {
-			return false
-		}
-	}
-	return true
 }

@@ -9,21 +9,20 @@ import (
 type TokenType string
 
 const (
-	ILLEGAL    TokenType = "ILLEGAL"
-	EOF        TokenType = "EOF"
-	EOL        TokenType = "EOL"
-	SEGM       TokenType = "SEGM"
-	FIELD      TokenType = "FIELD"
-	LCHILD     TokenType = "LCHILD"
-	XDFLD      TokenType = "XDFLD"
-	IDENT      TokenType = "IDENT"
-	ATTR       TokenType = "ATTR"
-	EQUALS     TokenType = "="
-	COMMA      TokenType = ","
-	LPAREN     TokenType = "("
-	RPAREN     TokenType = ")"
-	SKIPLINE   TokenType = "SKIPLINE"
-	LINECONCAT TokenType = "LINECONCAT"
+	EOF      TokenType = "EOF"
+	EOL      TokenType = "EOL"
+	SEGM     TokenType = "SEGM"
+	FIELD    TokenType = "FIELD"
+	LCHILD   TokenType = "LCHILD"
+	XDFLD    TokenType = "XDFLD"
+	IDENT    TokenType = "IDENT"
+	ATTR     TokenType = "ATTR"
+	EQUALS   TokenType = "="
+	COMMA    TokenType = ","
+	LPAREN   TokenType = "("
+	RPAREN   TokenType = ")"
+	LABEL    TokenType = "LABEL"
+	SKIPLINE TokenType = "SKIPLINE"
 )
 
 // Token represents a lexical token.
@@ -112,7 +111,7 @@ func lex(input string) ([]Token, error) {
 			if currentColumn != 71 {
 				return nil, fmt.Errorf("line %d column: %d: invalid line continuation position", currentLine, currentColumn)
 			}
-			
+
 			i += 9
 			currentColumn += 9
 			nextChar := input[i]
@@ -158,6 +157,10 @@ func lex(input string) ([]Token, error) {
 				tokens = append(tokens, tc.createToken(XDFLD, tokenStr))
 			} else if slices.Contains(attributes, tokenStr) {
 				tokens = append(tokens, tc.createToken(ATTR, tokenStr))
+			} else if currentColumn == 0 {
+				tokens = append(tokens, tc.createToken(LABEL, tokenStr))
+			} else if currentColumn == 7 || tokenStr == "DBD" || tokenStr == "DATASET" {
+				tokens = append(tokens, tc.createToken(SKIPLINE, tokenStr))
 			} else {
 				tokens = append(tokens, tc.createToken(IDENT, tokenStr))
 			}
