@@ -17,9 +17,9 @@ func main() {
 		return
 	}
 
-	for _, token := range tokens {
-		fmt.Println(token)
-	}
+	//for _, token := range tokens {
+	//	fmt.Println(token)
+	//}
 
 	parser := NewParser(tokens)
 
@@ -28,14 +28,22 @@ func main() {
 		fmt.Println("Error parsing DBD:", err)
 		return
 	}
+	fmt.Printf("Parsed %d segments\n", len(segms))
+
+	for _, segm := range segms {
+		attrMessage := ""
+		for _, attr := range segm.Attributes {
+			attrMessage += fmt.Sprintf("%s=%s ", attr.Key, attr.Value)
+		}
+
+		fmt.Printf("Got SEGM %s\n", attrMessage)
+	}
 
 	segmsJson, err := json.MarshalIndent(segms, "", "  ")
 	if err != nil {
 		fmt.Println("Error marshalling segms:", err)
 		return
 	}
-
-	// to file
 
 	f, err := os.Create("example.json")
 	if err != nil {
@@ -46,6 +54,8 @@ func main() {
 	defer f.Close()
 
 	_, err = f.Write(segmsJson)
-
-	fmt.Println(string(segmsJson))
+	if err != nil {
+		fmt.Println("Error writing to file:", err)
+		return
+	}
 }

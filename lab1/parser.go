@@ -60,7 +60,10 @@ func (p *Parser) ParseDBD() ([]*Segm, error) {
 		skipped := p.parseSkip()
 		for skipped {
 			skipped = p.parseSkip()
-			currentSegm = nil
+			if currentSegm != nil {
+				segms = append(segms, currentSegm)
+				currentSegm = nil
+			}
 		}
 
 		segmAttrs, errSegm := p.parseSegm()
@@ -101,7 +104,10 @@ func (p *Parser) ParseDBD() ([]*Segm, error) {
 		}
 
 		fmt.Printf("%v\n", currentSegm)
-		return nil, fmt.Errorf("unexpected token: %q\nSEGM: %w\nFIELD: %w\nLCHILD: %w\n", p.curToken().Literal, errSegm, errField, errLChild)
+
+		errFormat := "unexpected token at %v %v: %q\nSEGM: %w\nFIELD: %w\nLCHILD: %w\nXDFLD: %w\n"
+
+		return nil, fmt.Errorf(errFormat, p.curToken().Line, p.curToken().Column, p.curToken().Literal, errSegm, errField, errLChild, errXDFld)
 	}
 
 	return segms, nil

@@ -159,7 +159,7 @@ func lex(input string) ([]Token, error) {
 				tokens = append(tokens, tc.createToken(ATTR, tokenStr))
 			} else if currentColumn == 0 {
 				tokens = append(tokens, tc.createToken(LABEL, tokenStr))
-			} else if currentColumn == 7 || tokenStr == "DBD" || tokenStr == "DATASET" {
+			} else if currentColumn == 7 || tokenStr == "DBD" || tokenStr == "DATASET" || tokenStr == "DBDGEN" || tokenStr == "FINISH" || tokenStr == "END" {
 				tokens = append(tokens, tc.createToken(SKIPLINE, tokenStr))
 			} else {
 				tokens = append(tokens, tc.createToken(IDENT, tokenStr))
